@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <script type="module" crossorigin src="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/polyfills.publishBIB-rU-4.js"></script>
+
+    <script>if (navigator.userAgent.indexOf('MacWechat' > -1)) {document.__wxjsjs__isLoaded = 'loaded';} window.global = window;</script>
+    <script>
+      (function () {
+        try {
+          window.workerPre = null;
+          if (!location.href.indexOf('/pages/home')) return;
+          window.xweb.worker.connect()
+          window.xweb.worker.port.onmessage = function (e) {
+            if (e.data.id === 0 && e.data.data.api) window.workerPre = e.data
+          }
+          window.xweb.worker.port.postMessage({ id: 0, apiName: 'hello' })
+        } catch {}
+      })()
+    </script>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/favicon.svg" />
+    <link
+      rel="stylesheet"
+      href="https://res.wx.qq.com/open/libs/weui-icon/1.0.0/weui-icon.css"
+    />
+    <link rel="stylesheet" href="https://res.wx.qq.com/open/libs/weui/2.4.1/weui.min.css">
+    <title>视频号</title>
+    <style>
+      @media (prefers-color-scheme: dark) {
+        html,
+        body,
+        #app {
+          background: #181818;
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/index.publishaWPigee1.js"></script>
+    <link rel="modulepreload" crossorigin href="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/worker-client.publishC37UyCiv.js">
+    <link rel="modulepreload" crossorigin href="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/virtual_svg-icons-register.publishBgnG14O3.js">
+    <link rel="modulepreload" crossorigin href="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/theme.publishD3dLNXhN.js">
+    <link rel="modulepreload" crossorigin href="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/global.publishnoL1sD0S.js">
+    <link rel="stylesheet" crossorigin href="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/css/virtual_svg-icons-register.Drc4e7wE.css">
+    <link rel="stylesheet" crossorigin href="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/css/index.D7z_E_qk.css">
+    <script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();if(location.protocol!="file:"){window.__vite_is_modern_browser=true}</script>
+    <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+  </head>
+  <body>
+    <noscript>
+    </noscript>
+    <div id="app"></div>
+    <script src="https://res.wx.qq.com/t/wx_fed/cdn_libs/res/libpag/4.3.48/libpag.min.js"></script>
+    <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+    <script nomodule crossorigin id="vite-legacy-polyfill" src="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/polyfills-legacy.publishD9do5t_z.js"></script>
+    <script nomodule crossorigin id="vite-legacy-entry" data-src="//res.wx.qq.com/t/wx_fed/finder/web/web-finder/res/js/index-legacy.publishC1FjD0gO.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+  </body>
+</html>
