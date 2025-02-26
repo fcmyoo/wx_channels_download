@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,7 +17,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/qtgolang/SunnyNet/SunnyNet"
-	"github.com/qtgolang/SunnyNet/public"
+	sunnyhttp "github.com/qtgolang/SunnyNet/src/http"
+	"github.com/qtgolang/SunnyNet/src/public"
 
 	"wx_channel/pkg/argv"
 	"wx_channel/pkg/certificate"
@@ -101,7 +100,7 @@ func main() {
 	fmt.Printf("\n问题反馈 https://github.com/ltaoo/wx_channels_download/issues\n")
 	existing, err1 := certificate.CheckCertificate("SunnyNet")
 	if err1 != nil {
-		fmt.Printf("\nERROR %v\v", err1.Error())
+		fmt.Printf("\nERROR %v\n", err1.Error())
 		fmt.Printf("按 Ctrl+C 退出...\n")
 		select {}
 	}
@@ -135,7 +134,7 @@ func main() {
 	_, err3 := client.Get("https://sunny.io/")
 	if err3 == nil {
 		if os_env == "windows" {
-			ok := Sunny.StartProcess()
+			ok := Sunny.OpenDrive(false)
 			if !ok {
 				fmt.Printf("\nERROR 启动进程代理失败\n")
 				fmt.Printf("按 Ctrl+C 退出...\n")
@@ -170,21 +169,28 @@ type FrontendTip struct {
 	Msg string `json:"msg"`
 }
 
-func HttpCallback(Conn *SunnyNet.HttpConn) {
-	host := Conn.Request.URL.Hostname()
-	path := Conn.Request.URL.Path
-	if Conn.Type == public.HttpSendRequest {
-		// Conn.Request.Header.Set("Cache-Control", "no-cache")
-		Conn.Request.Header.Del("Accept-Encoding")
+func HttpCallback(Conn SunnyNet.ConnHTTP) {
+	// 使用URL()方法获取URL信息
+	urlStr := Conn.URL()
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		fmt.Println("解析URL错误:", err)
+		return
+	}
+	host := parsedURL.Hostname()
+	path := parsedURL.Path
+	
+	if Conn.Type() == public.HttpSendRequest {
+		Conn.GetRequestHeader().Del("Accept-Encoding")
 		if util.Includes(path, "jszip") {
-			headers := http.Header{}
+			headers := sunnyhttp.Header{}
 			headers.Set("Content-Type", "application/javascript")
 			headers.Set("__debug", "local_file")
 			Conn.StopRequest(200, zip_js, headers)
 			return
 		}
 		if util.Includes(path, "FileSaver.min") {
-			headers := http.Header{}
+			headers := sunnyhttp.Header{}
 			headers.Set("Content-Type", "application/javascript")
 			headers.Set("__debug", "local_file")
 			Conn.StopRequest(200, file_saver_js, headers)
@@ -192,125 +198,53 @@ func HttpCallback(Conn *SunnyNet.HttpConn) {
 		}
 		if path == "/__wx_channels_api/profile" {
 			var data ChannelProfile
-			body, _ := io.ReadAll(Conn.Request.Body)
-			_ = Conn.Request.Body.Close()
+			body := Conn.GetRequestBody()
 			err := json.Unmarshal(body, &data)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 			fmt.Printf("\n打开了视频\n%s\n", data.Title)
-			headers := http.Header{}
+			headers := sunnyhttp.Header{}
 			headers.Set("Content-Type", "application/json")
 			headers.Set("__debug", "fake_resp")
-			Conn.StopRequest(200, "{}", headers)
+			Conn.StopRequest(200, []byte("{}"), headers)
 			return
 		}
 		if path == "/__wx_channels_api/tip" {
 			var data FrontendTip
-			body, _ := io.ReadAll(Conn.Request.Body)
-			_ = Conn.Request.Body.Close()
+			body := Conn.GetRequestBody()
 			err := json.Unmarshal(body, &data)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 			fmt.Printf("[FRONTEND]%s\n", data.Msg)
-			headers := http.Header{}
+			headers := sunnyhttp.Header{}
 			headers.Set("Content-Type", "application/json")
 			headers.Set("__debug", "fake_resp")
-			Conn.StopRequest(200, "{}", headers)
+			Conn.StopRequest(200, []byte("{}"), headers)
 			return
 		}
 	}
-	if Conn.Type == public.HttpResponseOK {
-		content_type := strings.ToLower(Conn.Response.Header.Get("content-type"))
-		if Conn.Response.Body != nil {
-			Body, _ := io.ReadAll(Conn.Response.Body)
-			_ = Conn.Response.Body.Close()
-			// if content_type == "text/css" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// if content_type == "image/svg+xml" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// if content_type == "image/jpeg" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// if content_type == "image/jpg" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// if content_type == "image/png" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// if content_type == "image/gif" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// if content_type == "video/mp4" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// if path == "/web/report-perf" {
-			// 	Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
-			// 	return
-			// }
-			// fmt.Println("HttpCallback", Conn.Type, host, path)
-			// fmt.Println("Response ContentType is", content_type)
+	if Conn.Type() == public.HttpResponseOK {
+		content_type := strings.ToLower(Conn.GetResponseHeader().Get("content-type"))
+		Body := Conn.GetResponseBody()
+		if Body != nil {
 			if content_type == "text/html; charset=utf-8" {
-				// fmt.Println("\n\n检测到页面打开")
-				// fmt.Println(path)
 				html := string(Body)
 				script_reg1 := regexp.MustCompile(`src="([^"]{1,})\.js"`)
 				html = script_reg1.ReplaceAllString(html, `src="$1.js`+v+`"`)
 				script_reg2 := regexp.MustCompile(`href="([^"]{1,})\.js"`)
 				html = script_reg2.ReplaceAllString(html, `href="$1.js`+v+`"`)
-				Conn.Response.Header.Set("__debug", "append_script")
+				Conn.GetResponseHeader().Set("__debug", "append_script")
 				script2 := ""
-				// script2 := `<script src="https://debug.funzm.com/target.js"></script>`
-				// 				script2 := `<script
-				//       crossorigin="anonymous"
-				//       src="https://pagespy.jikejishu.com/page-spy/index.min.js"
-				//     ></script>
-				//     <script
-				//       crossorigin="anonymous"
-				//       src="https://pagespy.jikejishu.com/plugin/data-harbor/index.min.js"
-				//     ></script>
-				//     <script
-				//       crossorigin="anonymous"
-				//       src="https://pagespy.jikejishu.com/plugin/rrweb/index.min.js"
-				//     ></script>
-				//     <!-- 使用第二步：实例化 PageSpy -->
-				//     <script>
-				//       window.$harbor = new DataHarborPlugin();
-				//       window.$rrweb = new RRWebPlugin();
-				//       [window.$harbor, window.$rrweb].forEach((p) => {
-				//         PageSpy.registerPlugin(p);
-				//       });
-
-				//       // 实例化的参数都是可选的
-				//       window.$pageSpy = new PageSpy({
-				//         api: "pagespy.jikejishu.com",
-				//         clientOrigin: "https://pagespy.jikejishu.com",
-				//         project: "React 演示",
-				//         autoRender: true,
-				//         title: "PageSpy 🤝 React",
-				//       });
-				//       // 之后即可使用 PageSpy，前往 https://pagespy.jikejishu.com 体验
-				//     </script>`
-
 				if host == "channels.weixin.qq.com" && (path == "/web/pages/feed" || path == "/web/pages/home") {
-					// Conn.Response.Header.Add("wx-channel-video-download", "1")
 					script := fmt.Sprintf(`<script>%s</script>`, main_js)
 					html = strings.Replace(html, "<head>", "<head>\n"+script+script2, 1)
 					fmt.Println("1. 视频详情页 html 注入 js 成功")
-					Conn.Response.Body = io.NopCloser(bytes.NewBuffer([]byte(html)))
+					Conn.SetResponseBody([]byte(html))
 					return
 				}
-				Conn.Response.Body = io.NopCloser(bytes.NewBuffer([]byte(html)))
+				Conn.SetResponseBody([]byte(html))
 				return
 			}
 			if content_type == "application/javascript" {
@@ -323,7 +257,7 @@ func HttpCallback(Conn *SunnyNet.HttpConn) {
 				content = dep_reg.ReplaceAllString(content, `"js/$1.js`+v+`"`)
 				content = lazy_import_reg.ReplaceAllString(content, `import("$1.js`+v+`")`)
 				content = import_reg.ReplaceAllString(content, `import"$1.js`+v+`"`)
-				Conn.Response.Header.Set("__debug", "replace_script")
+				Conn.GetResponseHeader().Set("__debug", "replace_script")
 
 				if util.Includes(path, "/t/wx_fed/finder/web/web-finder/res/js/index.publish") {
 					regexp1 := regexp.MustCompile(`this.sourceBuffer.appendBuffer\(h\),`)
@@ -345,7 +279,7 @@ window.__wx_channels_store__.buffers.push(h);
 }
 if(f.cmd===re.MAIN_THREAD_CMD.AUTO_CUT`
 					content = regexp2.ReplaceAllString(content, replaceStr2)
-					Conn.Response.Body = io.NopCloser(bytes.NewBuffer([]byte(content)))
+					Conn.SetResponseBody([]byte(content))
 					return
 				}
 				if util.Includes(path, "/t/wx_fed/finder/web/web-finder/res/js/virtual_svg-icons-register") {
@@ -393,88 +327,15 @@ if(f.cmd===re.MAIN_THREAD_CMD.AUTO_CUT`
 					}
 					return feedResult;
 				}async`
-					if regexp1.MatchString(content) {
-						fmt.Println("3. 视频详情页 js 修改成功")
-					}
 					content = regexp1.ReplaceAllString(content, replaceStr1)
-					regex2 := regexp.MustCompile(`r.default={dialog`)
-					replaceStr2 := `r.default=window.window.__wx_channels_tip__={dialog`
-					content = regex2.ReplaceAllString(content, replaceStr2)
-					regex3 := regexp.MustCompile(`const u=this.storage.getSession`)
-					replaceStr3 := `return;const u = this.storage.getSession`
-					content = regex3.ReplaceAllString(content, replaceStr3)
-					regex4 := regexp.MustCompile(`return this.storage.getSession`)
-					replaceStr4 := `return null;return this.storage.getSession`
-					content = regex4.ReplaceAllString(content, replaceStr4)
-					regex5 := regexp.MustCompile(`this.updateDetail\(o\)`)
-					replaceStr5 := `(() => {
-					if (Object.keys(o).length===0){
-					return;
-					}
-					var data_object = o;
-					var media = data_object.objectDesc.media[0];
-					var profile = media.mediaType !== 4 ? {
-						type: "picture",
-						id: data_object.id,
-						title: data_object.objectDesc.description,
-						files: data_object.objectDesc.media,
-						spec: [],
-						contact: data_object.contact
-					} : {
-						type: "media",
-						duration: media.spec[0].durationMs,
-						spec: media.spec,
-						title: data_object.objectDesc.description,
-						url: media.url+media.urlToken,
-						size: media.fileSize,
-						key: media.decodeKey,
-						id: data_object.id,
-						nonce_id: data_object.objectNonceId,
-						nickname: data_object.nickname,
-						createtime: data_object.createtime,
-						fileFormat: media.spec.map(o => o.fileFormat),
-						contact: data_object.contact
-					};
-					if (window.__wx_channels_store__) {
-window.__wx_channels_store__.profiles.push(profile);
-					}
-					})(),this.updateDetail(o)`
-					content = regex5.ReplaceAllString(content, replaceStr5)
-					Conn.Response.Body = io.NopCloser(bytes.NewBuffer([]byte(content)))
+					Conn.SetResponseBody([]byte(content))
 					return
 				}
-				if util.Includes(path, "/t/wx_fed/finder/web/web-finder/res/js/FeedDetail.publish") {
-					regex := regexp.MustCompile(`,"投诉"\)]`)
-					replaceStr := `,"投诉"),...(() => {
-					if (window.__wx_channels_store__ && window.__wx_channels_store__.profile) {
-						return window.__wx_channels_store__.profile.spec.map((sp) => {
-							return p("div",{class:"context-item",role:"button",onClick:() => __wx_channels_handle_click_download__(sp)},sp.fileFormat);
-						});
-					}
-					})(),p("div",{class:"context-item",role:"button",onClick:()=>__wx_channels_handle_click_download__()},"原始视频"),p("div",{class:"context-item",role:"button",onClick:__wx_channels_download_cur__},"当前视频"),p("div",{class:"context-item",role:"button",onClick:()=>__wx_channels_handle_download_cover()},"下载封面"),p("div",{class:"context-item",role:"button",onClick:__wx_channels_handle_copy__},"复制链接")]`
-					content = regex.ReplaceAllString(content, replaceStr)
-					Conn.Response.Body = io.NopCloser(bytes.NewBuffer([]byte(content)))
-					return
-				}
-				if util.Includes(path, "worker_release") {
-					regex := regexp.MustCompile(`fmp4Index:p.fmp4Index`)
-					replaceStr := `decryptor_array:p.decryptor_array,fmp4Index:p.fmp4Index`
-					content = regex.ReplaceAllString(content, replaceStr)
-					Conn.Response.Body = io.NopCloser(bytes.NewBuffer([]byte(content)))
-					return
-				}
-				Conn.Response.Body = io.NopCloser(bytes.NewBuffer([]byte(content)))
+				Conn.SetResponseBody([]byte(content))
 				return
 			}
-			Conn.Response.Body = io.NopCloser(bytes.NewBuffer(Body))
+			Conn.SetResponseBody([]byte(Body))
+			return
 		}
-
-	}
-	if Conn.Type == public.HttpRequestFail {
-		//请求错误
-		// Body := []byte("Hello Sunny Response")
-		// Conn.Response = &http.Response{
-		// 	Body: io.NopCloser(bytes.NewBuffer(Body)),
-		// }
 	}
 }
